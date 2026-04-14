@@ -2,6 +2,7 @@ package me.xjqsh.lrtactical.item;
 
 import com.tacz.guns.api.item.IAnimationItem;
 import com.tacz.guns.client.renderer.item.AnimateGeoItemRenderer;
+import me.xjqsh.lrtactical.api.LrTacticalAPI;
 import me.xjqsh.lrtactical.api.item.IThrowable;
 import me.xjqsh.lrtactical.capability.CustomItemCoolDownsProvider;
 import me.xjqsh.lrtactical.client.renderer.item.ThrowableItemRendererWrapper;
@@ -13,6 +14,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -88,19 +90,54 @@ public class ThrowableItem extends Item implements IAnimationItem, IThrowable {
             return InteractionResultHolder.fail(player.getItemInHand(pUsedHand));
         }
         ItemStack stack = player.getItemInHand(pUsedHand);
+        ThrowableIndex<?, ?> index = getThrowableIndex(stack).orElse(null);
+        if (index == null) InteractionResultHolder.fail(stack);
         boolean flag = getThrowableIndex(stack)
-                .map(index -> index.getData().getCooldownCategory())
+                .map(ix -> ix.getData().getCooldownCategory())
                 .map(id -> player.getCapability(CustomItemCoolDownsProvider.CAPABILITY)
                         .map(cap -> cap.isOnCooldown(id))
                         .orElse(false)
                 ).orElse(false);
         if (!flag) {
-            player.startUsingItem(pUsedHand);
+//            player.startUsingItem(pUsedHand);
+            if(!pLevel.isClientSide()) {
+                stack.getOrCreateTag().putLong("use_timestamp", pLevel.getGameTime());
+                stack.getOrCreateTag().putLong("throw_timestamp", -1);
+            }
+            ResourceLocation id = index.getData().getCooldownCategory();
+            if (id != null) {
+                player.getCapability(CustomItemCoolDownsProvider.CAPABILITY).ifPresent(cap -> {
+                    cap.addCooldown(id, index.getData().getCooldown());
+                });
+            }
         }
         return InteractionResultHolder.consume(stack);
     }
 
+    @Override
+    public void inventoryTick(ItemStack stack, Level pLevel, Entity pEntity, int pSlotId, boolean pIsSelected) {
+        super.inventoryTick(stack, pLevel, pEntity, pSlotId, pIsSelected);
+
+        if (!(pEntity instanceof LivingEntity living)) return;
+        ThrowableIndex<?, ?> index = getThrowableIndex(stack).orElse(null);
+        if (index == null) return;
+
+        long timestamp = stack.getOrCreateTag().getLong("use_timestamp");
+
+        if (timestamp != -1) {
+            if (pIsSelected) {
+                if (!pLevel.isClientSide() && timestamp + index.getData().getPrepareTime() == pLevel.getGameTime()) stack.getOrCreateTag().putLong("throw_timestamp", pLevel.getGameTime() + index.getData().getThrowDelay());
+                if (timestamp + index.getData().getPrepareTime() < pLevel.getGameTime()) stack.getOrCreateTag().putLong("use_timestamp", -1);
+            } else  stack.getOrCreateTag().putLong("use_timestamp", -1);
+        }
+        if (!stack.getOrCreateTag().contains("throw_timestamp")) return;
+        long throwstamp = stack.getOrCreateTag().getLong("throw_timestamp");
+        if (throwstamp != -1 && throwstamp <= pLevel.getGameTime()) this.onThrow(pLevel, living, stack, index);
+    }
+
     public void onThrow(Level world, LivingEntity entity, ItemStack stack, ThrowableIndex<?, ?> index) {
+        stack.getOrCreateTag().putLong("use_timestamp", -1);
+        stack.getOrCreateTag().putLong("throw_timestamp", -1);
         var throwable = index.createEntity(stack, entity);
         if (index.getData().isCookable()) {
             int newLife = throwable.getLife() - (entity.getTicksUsingItem() - index.getData().getPrepareTime());
@@ -109,12 +146,6 @@ public class ThrowableItem extends Item implements IAnimationItem, IThrowable {
         }
         world.addFreshEntity(throwable);
 
-        ResourceLocation id = index.getData().getCooldownCategory();
-        if (id != null) {
-            entity.getCapability(CustomItemCoolDownsProvider.CAPABILITY).ifPresent(cap -> {
-                cap.addCooldown(id, index.getData().getCooldown());
-            });
-        }
         stack.shrink(1);
 
         if (index.getData() instanceof ExplodeThrowableData explode && explode.getExplode().isRemoteDetonation()) {

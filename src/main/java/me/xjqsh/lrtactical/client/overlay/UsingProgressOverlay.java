@@ -8,6 +8,7 @@ import me.xjqsh.lrtactical.capability.CombatPropertiesProvider;
 import me.xjqsh.lrtactical.item.throwable.ThrowableData;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -23,10 +24,12 @@ public class UsingProgressOverlay implements IGuiOverlay {
         if (player == null) {
             return;
         }
-        ItemStack stack = player.getUseItem();
+        ItemStack stack = player.getMainHandItem();
         if (stack.getItem() instanceof ICustomItem item) {
             float maxTick = item.getMaxUsingTick(stack);
-            int usingTick = player.getTicksUsingItem();
+            long timestamp = stack.getOrCreateTag().getLong("use_timestamp");
+            if (timestamp == -1) return;
+            int usingTick = Math.toIntExact((mc.level.getGameTime() - timestamp) % Integer.MAX_VALUE);
             float progress = Math.min(1f, usingTick / maxTick);
             int x = screenWidth / 2 - 16;
             int y = screenHeight / 2 + 16;
@@ -40,8 +43,8 @@ public class UsingProgressOverlay implements IGuiOverlay {
             if (stack.getItem() instanceof IThrowable throwable) {
                 throwable.getThrowableIndex(stack).ifPresent(index -> {
                     ThrowableData data = index.getData();
-                    if (data.isCookable() && player.getTicksUsingItem() >= data.getPrepareTime()) {
-                        int cookTime = player.getTicksUsingItem() - data.getPrepareTime();
+                    if (data.isCookable() && usingTick >= data.getPrepareTime()) {
+                        int cookTime = usingTick - data.getPrepareTime();
                         float cookProgress = Math.min(1f, cookTime / (float) data.getEntityData().getLifeTime());
                         guiGraphics.fill(x, y, (int) (x + cookProgress * 32), y + 4, 0xFF0000 | (alpha << 24));
                     }

@@ -22,6 +22,7 @@ import net.minecraft.client.renderer.block.model.ItemTransform;
 import net.minecraft.client.renderer.block.model.ItemTransforms;
 import net.minecraft.client.renderer.texture.MissingTextureAtlasSprite;
 import net.minecraft.client.renderer.texture.OverlayTexture;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
@@ -46,8 +47,10 @@ public class ThrowableItemRendererWrapper extends AnimateGeoItemRenderer<Bedrock
 
     @Override
     public void updateContext(ThrowableAnimationStateContext context, ItemStack stack, Player player, float partialTick) {
-        context.setUsing(player.isUsingItem());
-        context.setUsingTick(player.getTicksUsingItem());
+        long timestamp = stack.getOrCreateTag().getLong("use_timestamp");
+        long ticksUsing = timestamp == -1 ? 0 : (player.level().getGameTime() - timestamp) % Integer.MAX_VALUE;
+        context.setUsing(ticksUsing > 0);
+        context.setUsingTick(Math.toIntExact(ticksUsing));
         context.setPartialTicks(partialTick);
         context.setCurrentItem(stack);
     }

@@ -59,7 +59,7 @@ minecraft {
     runs {
         // applies to all the run configs below
         configureEach {
-            jvmArgs "-XX:+AllowEnhancedClassRedefinition"
+//            jvmArgs "-XX:+AllowEnhancedClassRedefinition"
             workingDirectory project.file('run')
 
             property 'forge.logging.markers', 'REGISTRIES'
@@ -181,8 +181,8 @@ dependencies {
     runtimeOnly fg.deobf("curse.maven:mmmmmmmmmmmm-225738:5319203")
 
     // oculus
-    runtimeOnly fg.deobf("curse.maven:embeddium-908741:5175031")
-    runtimeOnly fg.deobf("curse.maven:oculus-581495:5299671")
+//    runtimeOnly fg.deobf("curse.maven:embeddium-908741:5175031")
+//    runtimeOnly fg.deobf("curse.maven:oculus-581495:5299671")
 
     // sbw
     runtimeOnly fg.deobf("curse.maven:superb-warfare-1218165:6633653-sources-6633658")

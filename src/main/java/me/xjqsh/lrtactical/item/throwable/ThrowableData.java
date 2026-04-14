@@ -8,6 +8,9 @@ import org.jetbrains.annotations.Nullable;
 public class ThrowableData {
     @SerializedName("prepare_time")
     private int prepareTime = 10;
+
+    @SerializedName("throw_delay")
+    private int throwDelay = 5;
     
     @SerializedName("cookable")
     private boolean cookable = false;
@@ -32,6 +35,10 @@ public class ThrowableData {
 
     public int getPrepareTime() {
         return prepareTime;
+    }
+
+    public int getThrowDelay() {
+        return throwDelay;
     }
 
     public double getInitialSpeed() {
