@@ -24,6 +24,7 @@ import java.util.List;
 public class MeleeWeaponIndex<T extends MeleeWeaponData> implements ICustomItemIndex {
     private final MeleeWeaponType<T> type;
     private final Item baseItem;
+    private final double baseDamage;
     private final T data;
     private final ResourceLocation id;
     private final String name;
@@ -55,6 +56,7 @@ public class MeleeWeaponIndex<T extends MeleeWeaponData> implements ICustomItemI
             ));
         }
         defaultModifiers = builder.build();
+        this.baseDamage = data.getBaseDamage();
     }
 
     @Nullable
@@ -104,6 +106,10 @@ public class MeleeWeaponIndex<T extends MeleeWeaponData> implements ICustomItemI
 
     public int getMaxDurability() {
         return data.getMaxDurability();
+    }
+
+    public double getBaseDamage() {
+        return baseDamage;
     }
 
     @Override

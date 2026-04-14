@@ -11,6 +11,7 @@ import com.tacz.guns.client.model.bedrock.BedrockPart;
 import com.tacz.guns.client.renderer.item.AnimateGeoItemRenderer;
 import me.xjqsh.lrtactical.api.LrTacticalAPI;
 import me.xjqsh.lrtactical.api.animation.BaseAnimationStateContext;
+import me.xjqsh.lrtactical.api.item.IMeleeWeapon;
 import me.xjqsh.lrtactical.client.renderer.JumpSwayUtil;
 import me.xjqsh.lrtactical.client.renderer.model.CustomBedrockModel;
 import me.xjqsh.lrtactical.client.resource.display.MeleeDisplayInstance;
@@ -49,7 +50,13 @@ public class MeleeItemRenderer extends AnimateGeoItemRenderer<CustomBedrockModel
 
     @Override
     public ResourceLocation getTextureLocation(ItemStack stack) {
-        return LrTacticalAPI.getMeleeDisplay(stack).map(MeleeDisplayInstance::getTexture).orElse(null);
+        IMeleeWeapon melee = IMeleeWeapon.of(stack);
+        return melee == null ? null : melee.modifyTexture(LrTacticalAPI.getMeleeDisplay(stack).map(MeleeDisplayInstance::getTexture).orElse(null), stack);
+    }
+
+    public ResourceLocation getSlotTextureLocation(MeleeDisplayInstance display, ItemStack stack) {
+        IMeleeWeapon melee = IMeleeWeapon.of(stack);
+        return melee == null ? null : melee.modifyTexture(display.getSlotTexture(), stack);
     }
 
     @Override
@@ -139,10 +146,10 @@ public class MeleeItemRenderer extends AnimateGeoItemRenderer<CustomBedrockModel
         LrTacticalAPI.getMeleeDisplay(stack).ifPresentOrElse(display -> {
             BedrockAnimatedModel model = display.getModel();
             // GUI 特殊渲染
-            if (ctx == GUI && display.getSlotTexture() != null) {
+            if (ctx == GUI && getSlotTextureLocation(display, stack) != null) {
                 poseStack.translate(0.5, 1.5, 0.5);
                 poseStack.mulPose(Axis.ZN.rotationDegrees(180));
-                VertexConsumer buffer = bufferSource.getBuffer(RenderType.entityTranslucent(display.getSlotTexture()));
+                VertexConsumer buffer = bufferSource.getBuffer(RenderType.entityTranslucent(getSlotTextureLocation(display, stack)));
                 SLOT_MODEL.renderToBuffer(poseStack, buffer, light, overlay, 1.0F, 1.0F, 1.0F, 1.0F);
                 return;
             }

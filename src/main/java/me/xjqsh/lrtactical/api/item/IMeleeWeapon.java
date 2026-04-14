@@ -22,6 +22,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.phys.Vec3;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.api.distmarker.OnlyIn;
 import net.minecraftforge.common.ForgeHooks;
 import net.minecraftforge.event.entity.player.CriticalHitEvent;
 import net.minecraftforge.network.PacketDistributor;
@@ -41,6 +43,11 @@ public interface IMeleeWeapon extends ICustomItem {
             return item;
         }
         return null;
+    }
+
+    @OnlyIn(Dist.CLIENT)
+    default ResourceLocation modifyTexture(ResourceLocation original, ItemStack stack) {
+        return original;
     }
 
     @Override

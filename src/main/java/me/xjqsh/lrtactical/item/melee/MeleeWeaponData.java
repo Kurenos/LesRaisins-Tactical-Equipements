@@ -15,6 +15,9 @@ public class MeleeWeaponData {
     @SerializedName("attributes")
     private AttributeData attributes = new AttributeData();
 
+    @SerializedName("base_damage")
+    private double baseDamage = 0;
+
     @SerializedName("max_durability")
     private int maxDurability = 0;
 
@@ -35,6 +38,10 @@ public class MeleeWeaponData {
 
     public AttributeData getRawAttributes() {
         return attributes;
+    }
+
+    public double getBaseDamage() {
+        return baseDamage;
     }
 
     public int getMaxDurability() {

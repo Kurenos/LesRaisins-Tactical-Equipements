@@ -13,6 +13,7 @@ import me.xjqsh.lrtactical.item.melee.CombatData;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.decoration.ArmorStand;
@@ -154,7 +155,7 @@ public class MeleeItem extends Item implements IAnimationItem, IMeleeWeapon {
 
     @Override
     public void attack(Player attacker, ItemStack stack, MeleeAction action, List<Entity> targets) {
-        float base = (float) attacker.getAttributeValue(Attributes.ATTACK_DAMAGE);
+        float base = (float) getAttackDamage(attacker, stack);
         this.getMeleeIndex(stack).ifPresent(index -> {
             CombatData combatData = index.getData().getAttackInfo();
             if (combatData == null) {
@@ -193,6 +194,32 @@ public class MeleeItem extends Item implements IAnimationItem, IMeleeWeapon {
                 IMeleeWeapon.playMeleeSound(attacker, index.getId(), crit ? "crit" : action.getId() + "_hit", 2, 1);
             }
         });
+    }
+
+    public double getAttackDamage(Player attacker, ItemStack stack) {
+        AttributeInstance attackAttribute = attacker.getAttribute(Attributes.ATTACK_DAMAGE);
+        if (attackAttribute == null) return 0;
+        MeleeWeaponIndex<?> index = getMeleeIndex(stack).orElse(null);
+        if (index == null) return  attackAttribute.getValue();
+        double d0 = attackAttribute.getBaseValue();
+        d0 += index.getBaseDamage();
+
+
+        for(AttributeModifier attributemodifier : attackAttribute.getModifiers(AttributeModifier.Operation.ADDITION)) {
+            d0 += attributemodifier.getAmount();
+        }
+
+        double d1 = d0;
+
+        for(AttributeModifier attributemodifier1 : attackAttribute.getModifiers(AttributeModifier.Operation.MULTIPLY_BASE)) {
+            d1 += d0 * attributemodifier1.getAmount();
+        }
+
+        for(AttributeModifier attributemodifier2 : attackAttribute.getModifiers(AttributeModifier.Operation.MULTIPLY_TOTAL)) {
+            d1 *= 1.0D + attributemodifier2.getAmount();
+        }
+
+        return attackAttribute.getAttribute().sanitizeValue(d1);
     }
 
     @Override
